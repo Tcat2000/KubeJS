@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 @ReturnsSelf
 // Cardinal blocks that can face any horizontal direction (NSEW).
@@ -87,7 +89,7 @@ public class HorizontalDirectionalBlockBuilder extends BlockBuilder {
 		public HorizontalDirectionalBlockJS(BlockBuilder p) {
 			super(p);
 			if (hasCustomShape()) {
-				Direction.Plane.HORIZONTAL.forEach(direction -> shapes.put(direction, rotateShape(shape, direction)));
+				Direction.Plane.HORIZONTAL.forEach(direction -> shapes.put(direction, rotateShape(Shapes.block(), direction)));
 			}
 		}
 
@@ -130,7 +132,18 @@ public class HorizontalDirectionalBlockBuilder extends BlockBuilder {
 		@Override
 		@Deprecated
 		public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-			return hasCustomShape() ? shapes.get(state.getValue(FACING)) : shape;
+			AtomicReference<VoxelShape> outShape = new AtomicReference<>(Shapes.block());
+			shape.forEach((k,v) -> {
+				AtomicBoolean match = new AtomicBoolean(true);
+				k.forEach((p,V) -> {
+					System.out.println(state.getValue(p) + " ?= " + V);
+					if(match.get() && state.getValue(p) != V) {
+						match.set(false);
+					}
+				});
+				if(match.get()) outShape.set(v);
+			});
+			return hasCustomShape() ? shapes.get(state.getValue(FACING)) : Shapes.block();
 		}
 	}
 

@@ -44,9 +44,11 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -54,7 +56,11 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class BasicBlockJS extends Block implements SimpleWaterloggedBlock {
@@ -88,12 +94,16 @@ public class BasicBlockJS extends Block implements SimpleWaterloggedBlock {
 	}
 
 	public final BlockBuilder blockBuilder;
-	public final VoxelShape shape;
+	public final Map<Map<Property<?>,?>, VoxelShape> shape;
+	public final Map<Map<Property<?>,?>, VoxelShape> defaultShape;
 
 	public BasicBlockJS(BlockBuilder p) {
 		super(p.createProperties());
 		blockBuilder = p;
-		shape = BlockBuilder.createShape(p.customShape);
+		shape = new HashMap<>();
+		p.customShape.forEach((k,v) -> {
+			shape.put(k, BlockBuilder.createShape(v));
+		});
 
 		var blockState = stateDefinition.any();
 		if (blockBuilder.defaultStateModification != null) {
@@ -114,7 +124,11 @@ public class BasicBlockJS extends Block implements SimpleWaterloggedBlock {
 	@Override
 	@Deprecated
 	public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-		return shape;
+		AtomicReference<VoxelShape> returnShape = new AtomicReference<>(BlockBuilder.createShape(List.of(new AABB[]{new AABB(0d, 0d, 0d, 1, 1, 1)})));
+		shape.forEach((k,v) -> {
+			if(state.getProperties() == k) returnShape.set(v);
+		});
+		return returnShape.get();
 	}
 
 	@Override

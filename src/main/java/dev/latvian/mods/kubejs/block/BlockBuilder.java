@@ -57,8 +57,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -82,7 +84,7 @@ public abstract class BlockBuilder extends ModelledBuilderBase<Block> {
 	public transient BlockRenderType renderType;
 	public transient BlockTintFunction tint;
 	public transient ItemBuilder itemBuilder;
-	public transient List<AABB> customShape;
+	public Consumer<GetShapeCallbackJS> shapeCallback;
 	public transient boolean noCollision;
 	public transient boolean notSolid;
 	public transient float slipperiness = Float.NaN;
@@ -128,7 +130,7 @@ public abstract class BlockBuilder extends ModelledBuilderBase<Block> {
 			b.blockBuilder = this;
 		}
 
-		this.customShape = new ArrayList<>();
+		this.customShape = new HashMap<Map<Property<?>, ?>, List<AABB>>();
 		this.noCollision = false;
 		this.notSolid = false;
 		this.randomTickCallback = null;
@@ -255,7 +257,7 @@ public abstract class BlockBuilder extends ModelledBuilderBase<Block> {
 			}
 
 			if (tint != null || !customShape.isEmpty()) {
-				var boxes = customShape.isEmpty() ? List.of(AABBWrapper.CUBE) : customShape;
+				var boxes = List.of(AABBWrapper.CUBE);//customShape.isEmpty() ? List.of(AABBWrapper.CUBE) : customShape;
 
 				for (var box : boxes) {
 					m.element(e -> {
@@ -470,7 +472,7 @@ public abstract class BlockBuilder extends ModelledBuilderBase<Block> {
 		return item(null);
 	}
 
-	@Info("Set the shape of the block.")
+	/*@Info("Set the shape of the block.")
 	public BlockBuilder box(double x0, double y0, double z0, double x1, double y1, double z1, boolean scale16) {
 		if (scale16) {
 			customShape.add(new AABB(x0 / 16D, y0 / 16D, z0 / 16D, x1 / 16D, y1 / 16D, z1 / 16D));
@@ -479,11 +481,23 @@ public abstract class BlockBuilder extends ModelledBuilderBase<Block> {
 		}
 
 		return this;
+	}*/
+	@Info("Set the shape of the block.")
+	public BlockBuilder box(Map<Property<?>, String> state, double x0, double y0, double z0, double x1, double y1, double z1, boolean scale16) {
+		/*List<AABB> parts = customShape.getOrDefault(state, new ArrayList<>());
+		if (scale16) {
+			parts.add(new AABB(x0 / 16D, y0 / 16D, z0 / 16D, x1 / 16D, y1 / 16D, z1 / 16D));
+		} else {
+			parts.add(new AABB(x0, y0, z0, x1, y1, z1));
+		}*/
+		//customShape.put(state, parts);
+
+		return this;
 	}
 
 	@Info("Set the shape of the block.")
-	public BlockBuilder box(double x0, double y0, double z0, double x1, double y1, double z1) {
-		return box(x0, y0, z0, x1, y1, z1, true);
+	public BlockBuilder box(Map<Property<?>, String> state, double x0, double y0, double z0, double x1, double y1, double z1) {
+		return box(state, x0, y0, z0, x1, y1, z1, true);
 	}
 
 	public static VoxelShape createShape(List<AABB> boxes) {
